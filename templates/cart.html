@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>购物车 - 宠物电商</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">宠物商城</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">首页</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h2>我的购物车</h2>
+        
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>商品</th>
+                                    <th>单价</th>
+                                    <th>数量</th>
+                                    <th>小计</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cart-items">
+                                <!-- 购物车商品将通过JavaScript动态加载 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>订单摘要</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>商品总计:</span>
+                            <span id="total-price">¥0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>运费:</span>
+                            <span>¥0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <strong>总计:</strong>
+                            <strong id="final-total">¥0.00</strong>
+                        </div>
+                        <button class="btn btn-success w-100">去结算</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-light mt-5 py-4">
+        <div class="container">
+            <p class="text-center text-muted">&copy; 2023 宠物商城. 为您的爱宠提供最好的产品.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 这里应该从后端API获取购物车数据
+        // 为了演示，我们创建一些模拟数据
+        const cartItems = [
+            {
+                id: 1,
+                name: "宠物狗粮",
+                price: 89.99,
+                quantity: 2,
+                image: "/static/images/dog-food.jpg"
+            },
+            {
+                id: 2,
+                name: "猫砂",
+                price: 24.99,
+                quantity: 1,
+                image: "/static/images/cat-litter.jpg"
+            }
+        ];
+        
+        // 渲染购物车商品
+        function renderCartItems() {
+            const cartItemsContainer = document.getElementById('cart-items');
+            cartItemsContainer.innerHTML = '';
+            
+            let totalPrice = 0;
+            
+            cartItems.forEach(item => {
+                const subtotal = item.price * item.quantity;
+                totalPrice += subtotal;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <img src="${item.image || 'https://via.placeholder.com/60x60'}" 
+                                 class="me-3" style="width: 60px; height: 60px; object-fit: cover;" 
+                                 alt="${item.name}">
+                            <span>${item.name}</span>
+                        </div>
+                    </td>
+                    <td>¥${item.price.toFixed(2)}</td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="updateQuantity(${item.id}, -1)">-</button>
+                            <input type="number" class="form-control mx-2" value="${item.quantity}" min="1" 
+                                   style="width: 60px;" onchange="updateQuantity(${item.id}, 0, this.value)">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="updateQuantity(${item.id}, 1)">+</button>
+                        </div>
+                    </td>
+                    <td>¥${subtotal.toFixed(2)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="removeItem(${item.id})">删除</button>
+                    </td>
+                `;
+                
+                cartItemsContainer.appendChild(row);
+            });
+            
+            // 更新总计
+            document.getElementById('total-price').textContent = `¥${totalPrice.toFixed(2)}`;
+            document.getElementById('final-total').textContent = `¥${totalPrice.toFixed(2)}`;
+        }
+        
+        // 更新商品数量
+        function updateQuantity(productId, change, newQuantity) {
+            const item = cartItems.find(item => item.id === productId);
+            if(item) {
+                if(change === 0) {
+                    // 直接设置数量
+                    item.quantity = parseInt(newQuantity);
+                } else {
+                    // 根据change值调整数量
+                    item.quantity += change;
+                    if(item.quantity < 1) item.quantity = 1;
+                }
+                renderCartItems();
+            }
+        }
+        
+        // 删除商品
+        function removeItem(productId) {
+            const index = cartItems.findIndex(item => item.id === productId);
+            if(index !== -1) {
+                cartItems.splice(index, 1);
+                renderCartItems();
+            }
+        }
+        
+        // 页面加载时渲染购物车
+        document.addEventListener('DOMContentLoaded', renderCartItems);
+    </script>
+</body>
+</html>
