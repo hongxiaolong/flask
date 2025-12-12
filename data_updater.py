@@ -2,32 +2,38 @@ import schedule
 import time
 import threading
 from datetime import datetime
-from douyin_scraper import scraper
+from platform_manager import platform_manager
 import json
 import os
+import logging
+
+# 配置日志
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class DataUpdater:
     def __init__(self):
-        self.data_file = 'douyin_hot_data.json'
+        self.data_file = 'all_platforms_hot_data.json'
         self.lock = threading.Lock()
         self.last_update_time = None
         
     def update_data(self):
-        """更新热点数据"""
-        print(f"[{datetime.now()}] 开始更新抖音热点数据...")
+        """更新所有平台热点数据"""
+        logger.info(f"[{datetime.now()}] 开始更新所有平台热点数据...")
         try:
             with self.lock:
-                data = scraper.scrape_real_data()
+                # 获取所有平台的数据
+                all_data = platform_manager.get_all_platforms_data()
                 
                 # 保存到本地文件
                 with open(self.data_file, 'w', encoding='utf-8') as f:
-                    json.dump(data, f, ensure_ascii=False, indent=2)
+                    json.dump(all_data, f, ensure_ascii=False, indent=2)
                 
                 self.last_update_time = datetime.now()
-                print(f"[{datetime.now()}] 数据更新完成，共 {data['total_videos']} 条记录")
+                logger.info(f"[{datetime.now()}] 所有平台数据更新完成，共 {len(all_data)} 个平台的数据")
                 
         except Exception as e:
-            print(f"[{datetime.now()}] 数据更新失败: {e}")
+            logger.error(f"[{datetime.now()}] 数据更新失败: {e}")
     
     def load_cached_data(self):
         """加载缓存的数据"""
@@ -36,7 +42,7 @@ class DataUpdater:
                 with open(self.data_file, 'r', encoding='utf-8') as f:
                     return json.load(f)
         except Exception as e:
-            print(f"加载缓存数据失败: {e}")
+            logger.error(f"加载缓存数据失败: {e}")
         
         # 如果加载失败，获取新数据
         self.update_data()
@@ -51,7 +57,7 @@ class DataUpdater:
         # 同时每小时更新一次
         schedule.every().hour.do(self.update_data)
         
-        print("数据更新定时任务已启动...")
+        logger.info("数据更新定时任务已启动...")
         
         def run_scheduler():
             while True:
@@ -77,7 +83,7 @@ class DataUpdater:
                 with open(self.data_file, 'r', encoding='utf-8') as f:
                     return json.load(f)
         except Exception as e:
-            print(f"获取最新数据失败: {e}")
+            logger.error(f"获取最新数据失败: {e}")
             return self.load_cached_data()
 
 # 全局实例
@@ -95,4 +101,4 @@ if __name__ == "__main__":
         while True:
             time.sleep(10)
     except KeyboardInterrupt:
-        print("\n数据更新服务已停止")
+        logger.info("\n数据更新服务已停止")
